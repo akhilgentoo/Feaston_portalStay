@@ -1,0 +1,56 @@
+[
+  {
+    "id": "spice-cardamom",
+    "name": "Green Cardamom",
+    "category": "Spices",
+    "unit_price": 320,
+    "unit_label": "100 g pack",
+    "description": "Aromatic cardamom pods from Kerala highland farms.",
+    "image_path": ""
+  },
+  {
+    "id": "spice-pepper",
+    "name": "Malabar Black Pepper",
+    "category": "Spices",
+    "unit_price": 240,
+    "unit_label": "100 g pack",
+    "description": "Bold whole peppercorns with signature Malabar heat.",
+    "image_path": ""
+  },
+  {
+    "id": "spice-clove",
+    "name": "Premium Clove",
+    "category": "Spices",
+    "unit_price": 210,
+    "unit_label": "75 g pack",
+    "description": "Hand-selected sun-dried cloves for deep flavor.",
+    "image_path": ""
+  },
+  {
+    "id": "craft-coir-basket",
+    "name": "Handwoven Coir Basket",
+    "category": "Handicrafts",
+    "unit_price": 480,
+    "unit_label": "1 piece",
+    "description": "Traditional palm and coir weave by local artisans.",
+    "image_path": ""
+  },
+  {
+    "id": "craft-brass-lamp",
+    "name": "Mini Brass Nilavilakku",
+    "category": "Handicrafts",
+    "unit_price": 920,
+    "unit_label": "1 piece",
+    "description": "Compact Kerala-style brass lamp for prayer corners.",
+    "image_path": ""
+  },
+  {
+    "id": "craft-kathakali-mask",
+    "name": "Kathakali Wall Mask",
+    "category": "Handicrafts",
+    "unit_price": 760,
+    "unit_label": "1 piece",
+    "description": "Colorful handcrafted wall art inspired by Kathakali.",
+    "image_path": ""
+  }
+]

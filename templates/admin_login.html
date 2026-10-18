@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FeastOn Admin Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  </head>
+  <body>
+    <div class="orb orb-a"></div>
+    <div class="orb orb-b"></div>
+    <div class="noise"></div>
+
+    <main class="page-shell">
+      <section class="panel admin-login-card">
+        <p class="eyebrow">Admin Access</p>
+        <h1>Manage rooms and products</h1>
+        <p class="helper">Login to upload room photos and add product photos with live updates.</p>
+        <form method="post">
+          <label>
+            Username
+            <input type="text" name="username" required />
+          </label>
+          <label>
+            Password
+            <input type="password" name="password" required />
+          </label>
+          <button type="submit">Login</button>
+        </form>
+        {% if error %}
+          <div class="feedback error">
+            <p>{{ error }}</p>
+          </div>
+        {% endif %}
+        <div class="shop-nav">
+          <a class="ghost-link" href="{{ url_for('index') }}">Back to Stay</a>
+          <a class="ghost-link" href="{{ url_for('shop_page') }}">Go to Shop</a>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

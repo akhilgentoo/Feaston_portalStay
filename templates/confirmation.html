@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FeastOn | Submission Received</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  </head>
+  <body>
+    <div class="orb orb-a"></div>
+    <div class="orb orb-b"></div>
+    <div class="noise"></div>
+
+    <main class="page-shell">
+      <section class="panel confirmation">
+        <p class="eyebrow">Submission Complete</p>
+        <h1>Your details are received</h1>
+        <p class="lead">Our team will review your booking request and follow up based on the selected notification channel.</p>
+
+        <div class="stat-row">
+          <div>
+            <p class="stat-value">{{ confirmation.booking.days }} day(s)</p>
+            <p class="stat-label">Stay duration</p>
+          </div>
+          <div>
+            <p class="stat-value">{{ confirmation.booking.people }} guest(s)</p>
+            <p class="stat-label">People count</p>
+          </div>
+          <div>
+            <p class="stat-value">{{ confirmation.documents.resident_status.replace('_', ' ')|title }}</p>
+            <p class="stat-label">Residency</p>
+          </div>
+        </div>
+
+        {% if confirmation.notification.status == "sent" %}
+          <div class="feedback success">
+            <h3>Notification sent</h3>
+            <p>{{ confirmation.notification.detail }}</p>
+          </div>
+        {% else %}
+          <div class="feedback error">
+            <h3>Notification pending setup</h3>
+            <p>{{ confirmation.notification.detail }}</p>
+            <p>Configure environment variables for email/mobile delivery and resubmit.</p>
+          </div>
+        {% endif %}
+
+        <div class="notice">
+          Mandatory check-in rule: bring original hard-copy documents for all guests.
+          Verification is completed in person before room handover.
+        </div>
+
+        <div class="shop-nav">
+          <a class="ghost-link" href="{{ url_for('shop_page') }}">Shop Spices</a>
+          <a class="ghost-link" href="{{ url_for('admin_login') }}">Admin</a>
+          <a class="ghost-link" href="{{ url_for('index') }}">Create Another Booking</a>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

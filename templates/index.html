@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FeastOn Homestay | Tripunithura, Kochi</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  </head>
+  <body>
+    <div class="orb orb-a"></div>
+    <div class="orb orb-b"></div>
+    <div class="noise"></div>
+
+    <main class="page-shell">
+      <header class="top-strip">
+        <div class="brand">
+          <span class="brand-mark">FeastOn</span>
+          <p class="brand-copy">Homestay in Tripunithura, Kochi</p>
+        </div>
+        <div class="shop-nav">
+          <a class="ghost-link" href="{{ url_for('shop_page') }}">Shop Spices</a>
+          <a class="ghost-link" href="{{ url_for('admin_login') }}">Admin</a>
+          <a class="ghost-link" href="#booking-form">Plan Stay</a>
+        </div>
+      </header>
+
+      <section class="hero-grid">
+        <article class="hero-story panel">
+          <p class="eyebrow">Family Friendly Long Stay Retreat</p>
+          <h1>A soulful Kerala stay near Chottanikkara Temple and Hill Palace</h1>
+          <p class="lead">
+            Escape to serenity at FeastOn Homestay, where spiritual calm, heritage charm,
+            and warm hospitality blend into one memorable home-away-from-home.
+          </p>
+          <div class="tag-row">
+            <span>Spiritual Tranquility</span>
+            <span>Cultural Richness</span>
+            <span>Nature Calm</span>
+            <span>Local Kerala Flavors</span>
+          </div>
+          <div class="stat-row">
+            <div>
+              <p class="stat-value">1+ Day</p>
+              <p class="stat-label">Flexible duration</p>
+            </div>
+            <div>
+              <p class="stat-value">1-2 Guests</p>
+              <p class="stat-label">Current booking slot</p>
+            </div>
+            <div>
+              <p class="stat-value">2 Landmarks</p>
+              <p class="stat-label">Walking distance vibes</p>
+            </div>
+          </div>
+        </article>
+
+        <section class="booking panel" id="booking-form">
+          <h2>Step 1: Stay details</h2>
+          <p class="helper">Choose stay days and guests (currently 1 or 2 people per booking).</p>
+          <form method="post">
+            <div class="inline-grid">
+              <label>
+                Number of days
+                <input type="number" name="days" min="1" max="60" value="{{ form_data.days }}" required />
+              </label>
+              <label>
+                Total people
+                <input type="number" name="people" min="1" max="2" value="{{ form_data.people }}" required />
+              </label>
+            </div>
+
+            <label>
+              Group type
+              <select name="group_type">
+                <option value="family" {% if form_data.group_type == 'family' %}selected{% endif %}>Family</option>
+                <option value="friends" {% if form_data.group_type == 'friends' %}selected{% endif %}>Friends</option>
+                <option value="pilgrims" {% if form_data.group_type == 'pilgrims' %}selected{% endif %}>Pilgrims</option>
+                <option value="culture_lovers" {% if form_data.group_type == 'culture_lovers' %}selected{% endif %}>Culture Lovers</option>
+              </select>
+            </label>
+
+            <div class="inline-grid guest-breakdown">
+              <label>
+                Adults
+                <input type="number" name="adults" min="1" max="2" value="{{ form_data.adults }}" required />
+              </label>
+              <label>
+                Children
+                <input type="number" name="children" min="0" max="1" value="{{ form_data.children }}" />
+              </label>
+              <label>
+                Infants
+                <input type="number" name="infants" min="0" max="1" value="{{ form_data.infants }}" />
+              </label>
+            </div>
+            <p class="helper validation-msg" id="guest-breakdown-note"></p>
+            <button type="submit" id="continue-btn">Continue to ID Verification</button>
+          </form>
+
+          {% if decision.errors %}
+            <div class="feedback error">
+              <h3>Please adjust your details</h3>
+              <ul>
+                {% for error in decision.errors %}
+                  <li>{{ error }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endif %}
+        </section>
+      </section>
+
+      <section class="feature-grid">
+        <article class="feature panel">
+          <h3>Temple Morning Flow</h3>
+          <p>Wake up to the gentle temple rhythm and start your day in calm focus.</p>
+        </article>
+        <article class="feature panel">
+          <h3>Royal Heritage Trails</h3>
+          <p>Discover the regal stories and collections at Hill Palace Museum.</p>
+        </article>
+        <article class="feature panel">
+          <h3>Kerala Home Warmth</h3>
+          <p>Enjoy cozy spaces, caring hosts, and practical comforts for longer stays.</p>
+        </article>
+      </section>
+
+      <section class="panel room-gallery">
+        <p class="eyebrow">Room Visuals</p>
+        <h2>Live room gallery curated by admin</h2>
+        <div class="gallery-grid">
+          {% if room_photos %}
+            {% for photo in room_photos %}
+              <article class="gallery-card">
+                <img src="{{ url_for('static', filename=photo.image_path) }}" alt="{{ photo.caption }}" loading="lazy" />
+                <p>{{ photo.caption }}</p>
+              </article>
+            {% endfor %}
+          {% else %}
+            <article class="gallery-card placeholder">
+              <div class="gallery-fallback">FeastOn</div>
+              <p>Room photos will appear here once uploaded by admin.</p>
+            </article>
+            <article class="gallery-card placeholder">
+              <div class="gallery-fallback">Stay</div>
+              <p>Login at admin page to add lively room visuals.</p>
+            </article>
+          {% endif %}
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const totalPeopleInput = document.querySelector("input[name='people']");
+      const adultsInput = document.querySelector("input[name='adults']");
+      const childrenInput = document.querySelector("input[name='children']");
+      const infantsInput = document.querySelector("input[name='infants']");
+      const continueButton = document.getElementById("continue-btn");
+      const note = document.getElementById("guest-breakdown-note");
+
+      function toNumber(node, fallback = 0) {
+        const parsed = Number.parseInt(node.value, 10);
+        return Number.isNaN(parsed) ? fallback : parsed;
+      }
+
+      function clamp(value, minValue, maxValue) {
+        return Math.min(Math.max(value, minValue), maxValue);
+      }
+
+      function syncGuestBreakdown() {
+        const totalPeople = clamp(toNumber(totalPeopleInput, 1), 1, 2);
+        totalPeopleInput.value = String(totalPeople);
+
+        const adults = clamp(toNumber(adultsInput, 1), 1, totalPeople);
+        adultsInput.value = String(adults);
+
+        const remainingAfterAdults = totalPeople - adults;
+        const children = clamp(toNumber(childrenInput, 0), 0, remainingAfterAdults);
+        childrenInput.value = String(children);
+
+        const remainingAfterChildren = totalPeople - adults - children;
+        const infants = clamp(toNumber(infantsInput, 0), 0, remainingAfterChildren);
+        infantsInput.value = String(infants);
+
+        const breakdownTotal = adults + children + infants;
+        if (breakdownTotal !== totalPeople) {
+          note.textContent = `Guest breakdown must equal total people (${totalPeople}).`;
+          continueButton.disabled = true;
+        } else {
+          note.textContent = "";
+          continueButton.disabled = false;
+        }
+      }
+
+      [totalPeopleInput, adultsInput, childrenInput, infantsInput].forEach((node) => {
+        node.addEventListener("input", syncGuestBreakdown);
+      });
+      syncGuestBreakdown();
+    </script>
+  </body>
+</html>

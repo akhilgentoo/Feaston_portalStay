@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FeastOn Admin Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  </head>
+  <body>
+    <div class="orb orb-a"></div>
+    <div class="orb orb-b"></div>
+    <div class="noise"></div>
+
+    <main class="page-shell">
+      <header class="top-strip">
+        <div class="brand">
+          <span class="brand-mark">FeastOn Admin</span>
+          <p class="brand-copy">Welcome, {{ admin_user }}. Curate photos and products live.</p>
+        </div>
+        <div class="shop-nav">
+          <a class="ghost-link" href="{{ url_for('index') }}">Stay Page</a>
+          <a class="ghost-link" href="{{ url_for('shop_page') }}">Shop Page</a>
+          <form method="post" action="{{ url_for('admin_logout') }}">
+            <button type="submit" class="secondary-btn">Logout</button>
+          </form>
+        </div>
+      </header>
+
+      {% if notice %}
+        <div class="feedback success">
+          <p>{{ notice }}</p>
+        </div>
+      {% endif %}
+
+      {% if errors %}
+        <div class="feedback error">
+          <ul>
+            {% for error in errors %}
+              <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      <section class="admin-grid">
+        <article class="panel admin-card">
+          <p class="eyebrow">Room Photo Upload</p>
+          <h2>Add room visuals</h2>
+          <form method="post" action="{{ url_for('admin_add_room_photo') }}" enctype="multipart/form-data">
+            <label>
+              Caption
+              <input type="text" name="caption" placeholder="Sunrise balcony suite" />
+            </label>
+            <label>
+              Room image (PNG/JPG/JPEG/WEBP)
+              <input type="file" name="photo" accept=".png,.jpg,.jpeg,.webp" required />
+            </label>
+            <button type="submit">Upload room photo</button>
+          </form>
+          <div class="admin-thumb-grid">
+            {% for photo in room_photos %}
+              <figure class="admin-thumb">
+                <img src="{{ url_for('static', filename=photo.image_path) }}" alt="{{ photo.caption }}" />
+                <figcaption>{{ photo.caption }}</figcaption>
+              </figure>
+            {% else %}
+              <p class="helper">No room photos uploaded yet.</p>
+            {% endfor %}
+          </div>
+        </article>
+
+        <article class="panel admin-card">
+          <p class="eyebrow">Product Management</p>
+          <h2>Add a new shop product</h2>
+          <form method="post" action="{{ url_for('admin_add_product') }}" enctype="multipart/form-data">
+            <label>
+              Product name
+              <input type="text" name="name" required />
+            </label>
+            <div class="inline-grid">
+              <label>
+                Category
+                <select name="category">
+                  <option value="Spices">Spices</option>
+                  <option value="Handicrafts">Handicrafts</option>
+                </select>
+              </label>
+              <label>
+                Price (INR)
+                <input type="number" name="unit_price" min="1" required />
+              </label>
+            </div>
+            <label>
+              Unit label
+              <input type="text" name="unit_label" placeholder="100 g pack" required />
+            </label>
+            <label>
+              Description
+              <input type="text" name="description" placeholder="Local artisan made product" />
+            </label>
+            <label>
+              Product image (optional)
+              <input type="file" name="photo" accept=".png,.jpg,.jpeg,.webp" />
+            </label>
+            <button type="submit">Add product</button>
+          </form>
+        </article>
+      </section>
+
+      <section class="panel admin-card">
+        <p class="eyebrow">Update Product Images</p>
+        <h2>Refresh each product visual</h2>
+        <div class="admin-product-list">
+          {% for product in products %}
+            <article class="admin-product-row">
+              <div class="admin-product-meta">
+                <p class="cart-line-name">{{ product.name }}</p>
+                <p class="cart-line-meta">{{ product.category }} | INR {{ product.unit_price }} / {{ product.unit_label }}</p>
+              </div>
+              <div class="admin-product-photo">
+                {% if product.image_path %}
+                  <img src="{{ url_for('static', filename=product.image_path) }}" alt="{{ product.name }}" />
+                {% else %}
+                  <div class="product-fallback small">No Image</div>
+                {% endif %}
+              </div>
+              <form
+                method="post"
+                action="{{ url_for('admin_update_product_photo', product_id=product.id) }}"
+                enctype="multipart/form-data"
+                class="admin-photo-form"
+              >
+                <label>
+                  New image
+                  <input type="file" name="photo" accept=".png,.jpg,.jpeg,.webp" required />
+                </label>
+                <button type="submit">Update photo</button>
+              </form>
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

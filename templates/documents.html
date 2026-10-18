@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FeastOn | Guest Document Details</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  </head>
+  <body>
+    <div class="orb orb-a"></div>
+    <div class="orb orb-b"></div>
+    <div class="noise"></div>
+
+    <main class="page-shell">
+      <header class="top-strip">
+        <div class="brand">
+          <span class="brand-mark">FeastOn</span>
+          <p class="brand-copy">Step 2: Identity verification details</p>
+        </div>
+        <div class="shop-nav">
+          <a class="ghost-link" href="{{ url_for('shop_page') }}">Shop Spices</a>
+          <a class="ghost-link" href="{{ url_for('admin_login') }}">Admin</a>
+          <a class="ghost-link" href="{{ url_for('index') }}">Edit Stay</a>
+        </div>
+      </header>
+
+      <section class="hero-grid docs-grid">
+        <article class="panel">
+          <p class="eyebrow">Booking Snapshot</p>
+          <h1>Document details for confirmation</h1>
+          <div class="stat-row">
+            <div>
+              <p class="stat-value">{{ booking_data.days }} day(s)</p>
+              <p class="stat-label">Stay duration</p>
+            </div>
+            <div>
+              <p class="stat-value">{{ booking_data.people }} guest(s)</p>
+              <p class="stat-label">People count</p>
+            </div>
+            <div>
+              <p class="stat-value">{{ booking_data.group_type.replace('_', ' ')|title }}</p>
+              <p class="stat-label">Group type</p>
+            </div>
+          </div>
+          {% if booking_decision %}
+            <p class="helper">
+              Estimated total: INR {{ "{:,}".format(booking_decision.estimated_total) }}
+              {% if booking_decision.long_stay_discount > 0 %}
+                ({{ booking_decision.long_stay_discount }}% long-stay discount)
+              {% endif %}
+            </p>
+          {% endif %}
+          <div class="notice">
+            At check-in, all guests must carry original hard-copy documents for verification.
+          </div>
+        </article>
+
+        <section class="panel booking">
+          <h2>Submit ID details</h2>
+          <p class="helper">Aadhaar for Indian guests. Passport + visa + return travel for international guests.</p>
+          <form method="post">
+            <div class="option-row">
+              <label class="option">
+                <input
+                  type="radio"
+                  name="notification_method"
+                  value="email"
+                  {% if form_data.notification_method != 'mobile' %}checked{% endif %}
+                />
+                Notify by Email
+              </label>
+              <label class="option">
+                <input
+                  type="radio"
+                  name="notification_method"
+                  value="mobile"
+                  {% if form_data.notification_method == 'mobile' %}checked{% endif %}
+                />
+                Notify by Mobile
+              </label>
+            </div>
+
+            <div class="inline-grid">
+              <label>
+                Contact email
+                <input type="email" name="contact_email" value="{{ form_data.contact_email }}" />
+              </label>
+              <label>
+                Contact mobile
+                <input type="text" name="contact_mobile" value="{{ form_data.contact_mobile }}" />
+              </label>
+            </div>
+
+            <label>
+              Guest residency
+              <select name="resident_status" id="resident_status">
+                <option value="india" {% if form_data.resident_status == 'india' %}selected{% endif %}>India</option>
+                <option value="outside_india" {% if form_data.resident_status == 'outside_india' %}selected{% endif %}>
+                  Outside India
+                </option>
+              </select>
+            </label>
+
+            <div class="inline-grid">
+              <label>
+                Primary guest name
+                <input type="text" name="primary_name" value="{{ form_data.primary_name }}" required />
+              </label>
+              <label>
+                Second guest name {% if booking_data.people == 2 %}(required){% endif %}
+                <input
+                  type="text"
+                  name="second_name"
+                  value="{{ form_data.second_name }}"
+                  {% if booking_data.people == 2 %}required{% endif %}
+                />
+              </label>
+            </div>
+
+            <div id="india-fields">
+              <div class="inline-grid">
+                <label>
+                  Primary guest Aadhaar
+                  <input type="text" name="primary_aadhaar" value="{{ form_data.primary_aadhaar }}" />
+                </label>
+                <label>
+                  Second guest Aadhaar {% if booking_data.people == 2 %}(required){% endif %}
+                  <input type="text" name="second_aadhaar" value="{{ form_data.second_aadhaar }}" />
+                </label>
+              </div>
+            </div>
+
+            <div id="foreign-fields">
+              <div class="inline-grid">
+                <label>
+                  Primary guest passport number
+                  <input type="text" name="primary_passport" value="{{ form_data.primary_passport }}" />
+                </label>
+                <label>
+                  Second guest passport number {% if booking_data.people == 2 %}(required){% endif %}
+                  <input type="text" name="second_passport" value="{{ form_data.second_passport }}" />
+                </label>
+              </div>
+              <label>
+                Visiting visa details
+                <input type="text" name="visa_details" value="{{ form_data.visa_details }}" />
+              </label>
+              <label>
+                Return flight / onward travel details
+                <input type="text" name="return_travel_details" value="{{ form_data.return_travel_details }}" />
+              </label>
+            </div>
+
+            <button type="submit">Submit Verification Details</button>
+          </form>
+
+          {% if errors %}
+            <div class="feedback error">
+              <h3>Please fix the following</h3>
+              <ul>
+                {% for error in errors %}
+                  <li>{{ error }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endif %}
+        </section>
+      </section>
+    </main>
+
+    <script>
+      const residentSelect = document.getElementById("resident_status");
+      const indiaFields = document.getElementById("india-fields");
+      const foreignFields = document.getElementById("foreign-fields");
+      const peopleCount = Number({{ booking_data.people }});
+
+      const emailInput = document.querySelector("input[name='contact_email']");
+      const mobileInput = document.querySelector("input[name='contact_mobile']");
+      const notificationInputs = document.querySelectorAll("input[name='notification_method']");
+
+      function setRequiredBySelector(selector, required) {
+        document.querySelectorAll(selector).forEach((node) => {
+          node.required = required;
+        });
+      }
+
+      function syncResidencyFields() {
+        const status = residentSelect.value;
+        const isIndian = status === "india";
+
+        indiaFields.classList.toggle("hidden", !isIndian);
+        foreignFields.classList.toggle("hidden", isIndian);
+
+        setRequiredBySelector("input[name='primary_aadhaar']", isIndian);
+        setRequiredBySelector("input[name='second_aadhaar']", isIndian && peopleCount === 2);
+        setRequiredBySelector("input[name='primary_passport']", !isIndian);
+        setRequiredBySelector("input[name='second_passport']", !isIndian && peopleCount === 2);
+        setRequiredBySelector("input[name='visa_details']", !isIndian);
+        setRequiredBySelector("input[name='return_travel_details']", !isIndian);
+      }
+
+      function syncNotificationFields() {
+        const selected = document.querySelector("input[name='notification_method']:checked").value;
+        emailInput.required = selected === "email";
+        mobileInput.required = selected === "mobile";
+      }
+
+      residentSelect.addEventListener("change", syncResidencyFields);
+      notificationInputs.forEach((node) => node.addEventListener("change", syncNotificationFields));
+      syncResidencyFields();
+      syncNotificationFields();
+    </script>
+  </body>
+</html>

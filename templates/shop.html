@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FeastOn | Spices & Handicrafts</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  </head>
+  <body>
+    <div class="orb orb-a"></div>
+    <div class="orb orb-b"></div>
+    <div class="noise"></div>
+
+    <main class="page-shell">
+      <header class="top-strip">
+        <div class="brand">
+          <span class="brand-mark">FeastOn Store</span>
+          <p class="brand-copy">Kerala spices and handcrafted treasures</p>
+        </div>
+        <div class="shop-nav">
+          <a class="ghost-link" href="{{ url_for('index') }}">Stay Booking</a>
+          <a class="ghost-link" href="{{ url_for('admin_login') }}">Admin</a>
+          <span class="cart-badge">Cart: {{ cart_count }} item(s)</span>
+        </div>
+      </header>
+
+      <section class="panel">
+        <p class="eyebrow">Separate Shopping Page</p>
+        <h1>Spices and Handcraft Collection</h1>
+        <p class="lead">
+          Add items to cart and choose direct purchase or delivery. Delivery is free up to 5 km; beyond that,
+          INR 10 is charged per additional kilometer.
+        </p>
+        {% if notice %}
+          <div class="feedback success">
+            <p>{{ notice }}</p>
+          </div>
+        {% endif %}
+      </section>
+
+      <section class="shop-layout">
+        <section class="product-grid">
+          {% for product in products %}
+            <article class="panel product-card">
+              <div class="product-media">
+                {% if product.image_path %}
+                  <img src="{{ url_for('static', filename=product.image_path) }}" alt="{{ product.name }}" loading="lazy" />
+                {% else %}
+                  <div class="product-fallback">FeastOn</div>
+                {% endif %}
+              </div>
+              <p class="product-category">{{ product.category }}</p>
+              <h3>{{ product.name }}</h3>
+              <p class="product-copy">{{ product.description }}</p>
+              <p class="product-price">INR {{ product.unit_price }} <span>/ {{ product.unit_label }}</span></p>
+              <form method="post" action="{{ url_for('add_to_cart') }}" class="product-form">
+                <input type="hidden" name="product_id" value="{{ product.id }}" />
+                <label>
+                  Qty
+                  <input type="number" name="quantity" min="1" max="25" value="1" required />
+                </label>
+                <button type="submit">Add to cart</button>
+              </form>
+            </article>
+          {% endfor %}
+        </section>
+
+        <aside class="panel cart-panel">
+          <h2>Your Cart</h2>
+          {% if cart_items %}
+            <div class="cart-lines">
+              {% for item in cart_items %}
+                <div class="cart-line">
+                  <div>
+                    <p class="cart-line-name">{{ item.name }}</p>
+                    <p class="cart-line-meta">{{ item.quantity }} x INR {{ item.unit_price }}</p>
+                  </div>
+                  <p class="cart-line-total">INR {{ item.line_total }}</p>
+                </div>
+              {% endfor %}
+            </div>
+            <form method="post" action="{{ url_for('clear_cart') }}" class="clear-form">
+              <button type="submit" class="secondary-btn">Clear cart</button>
+            </form>
+          {% else %}
+            <p class="helper">No products in cart yet.</p>
+          {% endif %}
+
+          <div class="notice">
+            Delivery policy: 0-5 km free. Beyond 5 km, INR 10 per extra kilometer.
+          </div>
+
+          <section class="checkout-block">
+            <h3>Checkout</h3>
+            <form method="post" action="{{ url_for('checkout_cart') }}">
+              <label>
+                Purchaser name
+                <input type="text" name="customer_name" value="{{ checkout_data.customer_name }}" required />
+              </label>
+              <label>
+                Purchaser email
+                <input type="email" name="customer_email" value="{{ checkout_data.customer_email }}" required />
+              </label>
+              <label>
+                Purchaser mobile (optional)
+                <input type="text" name="customer_mobile" value="{{ checkout_data.customer_mobile }}" />
+              </label>
+              <label>
+                Purchase method
+                <select name="fulfillment_type" id="fulfillment_type">
+                  <option value="pickup" {% if checkout_data.fulfillment_type == 'pickup' %}selected{% endif %}>
+                    Direct purchase / pickup
+                  </option>
+                  <option value="delivery" {% if checkout_data.fulfillment_type == 'delivery' %}selected{% endif %}>
+                    Delivery to location
+                  </option>
+                </select>
+              </label>
+              <label id="distance_wrap">
+                Delivery distance from shop (km)
+                <input
+                  type="number"
+                  name="distance_km"
+                  id="distance_km"
+                  min="0"
+                  step="0.1"
+                  value="{{ checkout_data.distance_km }}"
+                />
+              </label>
+              <div class="checkout-summary">
+                <p>Subtotal: <strong>INR {{ subtotal }}</strong></p>
+                <p>Delivery: <strong>INR {{ delivery_charge_preview }}</strong></p>
+                <p class="estimate">Total: INR {{ total_preview }}</p>
+              </div>
+              <button type="submit">Place order and share details</button>
+            </form>
+
+            {% if errors %}
+              <div class="feedback error">
+                <h3>Please fix these details</h3>
+                <ul>
+                  {% for error in errors %}
+                    <li>{{ error }}</li>
+                  {% endfor %}
+                </ul>
+              </div>
+            {% endif %}
+
+            {% if order_result %}
+              <div class="feedback success">
+                <h3>Order submitted</h3>
+                <p>Total paid: INR {{ order_result.total }}</p>
+                <p>Delivery charge: INR {{ order_result.delivery_charge }}</p>
+                <p>Expected delivery: {{ order_result.delivery_eta_text }}</p>
+                <p>Purchaser notification: {{ order_result.notifications.purchaser.status }}</p>
+                <p>Admin notification: {{ order_result.notifications.admin.status }}</p>
+              </div>
+            {% endif %}
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <script>
+      const fulfillmentType = document.getElementById("fulfillment_type");
+      const distanceWrap = document.getElementById("distance_wrap");
+      const distanceInput = document.getElementById("distance_km");
+
+      function syncDistanceField() {
+        const isDelivery = fulfillmentType.value === "delivery";
+        distanceWrap.classList.toggle("hidden", !isDelivery);
+        distanceInput.required = isDelivery;
+        if (!isDelivery) {
+          distanceInput.value = "0";
+        }
+      }
+
+      fulfillmentType.addEventListener("change", syncDistanceField);
+      syncDistanceField();
+    </script>
+  </body>
+</html>
