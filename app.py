@@ -33,6 +33,18 @@ READ_ONLY_MESSAGE = (
     "This live site is read-only. Add photos/products by updating the Excel files and images "
     "in the documents/ folder locally, then commit and redeploy."
 )
+ADMIN_TABS = {
+    "bookings": "Stay Bookings",
+    "orders": "Shop Orders",
+    "photos": "Room Photos",
+    "products": "Products",
+}
+EXPORTABLE_STORES = {
+    "bookings": BOOKING_STORE,
+    "orders": SHOP_ORDER_STORE,
+    "products": PRODUCT_STORE,
+    "photos": ROOM_PHOTO_STORE,
+}
 ROOM_PHOTO_COLUMNS = ["id", "caption", "image_path", "uploaded_at_utc"]
 BOOKING_COLUMNS = [
     "submitted_at_utc", "days", "people", "group_type", "adults", "children", "infants",
@@ -580,14 +592,32 @@ def create_app() -> Flask:
         if not _is_admin_authenticated():
             return redirect(url_for("admin_login"))
 
+        active_tab = request.args.get("tab", "bookings")
+        if active_tab not in ADMIN_TABS:
+            active_tab = "bookings"
+
         return render_template(
             "admin_dashboard.html",
             admin_user=session.get("admin_user", "admin"),
+            active_tab=active_tab,
+            tabs=ADMIN_TABS,
+            bookings=list(reversed(read_rows(BOOKING_STORE))),
+            shop_orders=list(reversed(read_rows(SHOP_ORDER_STORE))),
             products=_load_products(),
             room_photos=_load_room_photos(),
             notice=session.pop("admin_notice", ""),
             errors=session.pop("admin_errors", []),
         )
+
+    @app.route("/admin/export/<name>", methods=["GET"])
+    def admin_export(name: str):
+        if not _is_admin_authenticated():
+            return redirect(url_for("admin_login"))
+        store = EXPORTABLE_STORES.get(name)
+        if store is None or not store.exists():
+            session["admin_errors"] = [f"No {name} Excel file exists yet."]
+            return redirect(url_for("admin_dashboard"))
+        return send_from_directory(store.parent, store.name, as_attachment=True)
 
     @app.route("/admin/room-photo", methods=["POST"])
     def admin_add_room_photo():
@@ -602,7 +632,7 @@ def create_app() -> Flask:
             image_path = _save_uploaded_image(photo, ROOM_UPLOAD_DIR, "room")
         except ValueError as exc:
             session["admin_errors"] = [str(exc)]
-            return redirect(url_for("admin_dashboard"))
+            return redirect(url_for("admin_dashboard", tab="photos"))
 
         room_photos = _load_room_photos()
         room_photos.insert(
@@ -616,7 +646,7 @@ def create_app() -> Flask:
         )
         _save_room_photos(room_photos)
         session["admin_notice"] = "Room photo added successfully."
-        return redirect(url_for("admin_dashboard"))
+        return redirect(url_for("admin_dashboard", tab="photos"))
 
     @app.route("/admin/product/add", methods=["POST"])
     def admin_add_product():
@@ -649,7 +679,7 @@ def create_app() -> Flask:
 
         if errors:
             session["admin_errors"] = errors
-            return redirect(url_for("admin_dashboard"))
+            return redirect(url_for("admin_dashboard", tab="products"))
 
         product_id = f"{_slugify(name)}-{uuid4().hex[:6]}"
         products = _load_products()
@@ -666,7 +696,7 @@ def create_app() -> Flask:
         )
         _save_products(products)
         session["admin_notice"] = f"Product '{name}' added."
-        return redirect(url_for("admin_dashboard"))
+        return redirect(url_for("admin_dashboard", tab="products"))
 
     @app.route("/admin/product/<product_id>/photo", methods=["POST"])
     def admin_update_product_photo(product_id: str):
@@ -680,7 +710,7 @@ def create_app() -> Flask:
             image_path = _save_uploaded_image(photo, PRODUCT_UPLOAD_DIR, "product")
         except ValueError as exc:
             session["admin_errors"] = [str(exc)]
-            return redirect(url_for("admin_dashboard"))
+            return redirect(url_for("admin_dashboard", tab="products"))
 
         products = _load_products()
         updated = False
@@ -692,11 +722,11 @@ def create_app() -> Flask:
 
         if not updated:
             session["admin_errors"] = ["Product not found for image upload."]
-            return redirect(url_for("admin_dashboard"))
+            return redirect(url_for("admin_dashboard", tab="products"))
 
         _save_products(products)
         session["admin_notice"] = "Product image updated."
-        return redirect(url_for("admin_dashboard"))
+        return redirect(url_for("admin_dashboard", tab="products"))
 
     @app.route("/guest-documents", methods=["GET", "POST"])
     def guest_documents():

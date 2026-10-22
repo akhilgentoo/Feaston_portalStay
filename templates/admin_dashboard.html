@@ -26,9 +26,22 @@
         </div>
       </header>
 
+      <nav class="admin-tabs">
+        {% for key, label in tabs.items() %}
+          <a class="admin-tab {% if key == active_tab %}is-active{% endif %}" href="{{ url_for('admin_dashboard', tab=key) }}">
+            {{ label }}
+            {% if key == 'bookings' %}<span class="tab-count">{{ bookings|length }}</span>{% endif %}
+            {% if key == 'orders' %}<span class="tab-count">{{ shop_orders|length }}</span>{% endif %}
+          </a>
+        {% endfor %}
+      </nav>
+
       {% if read_only %}
         <div class="feedback error">
           <p>{{ read_only_message }}</p>
+          {% if active_tab in ['bookings', 'orders'] %}
+            <p>New bookings and orders on the live site are not saved here; they are only sent by email/SMS notification.</p>
+          {% endif %}
         </div>
       {% endif %}
 
@@ -48,6 +61,125 @@
         </div>
       {% endif %}
 
+      {% if active_tab == 'bookings' %}
+      <section class="panel admin-card">
+        <div class="admin-tab-head">
+          <div>
+            <p class="eyebrow">Stay Bookings</p>
+            <h2>Guests who booked ({{ bookings|length }})</h2>
+          </div>
+          <a class="ghost-link" href="{{ url_for('admin_export', name='bookings') }}">Download Excel</a>
+        </div>
+        {% if bookings %}
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Submitted (UTC)</th>
+                  <th>Guests</th>
+                  <th>Contact</th>
+                  <th>Stay</th>
+                  <th>Party</th>
+                  <th>Residency / ID</th>
+                  <th>Travel</th>
+                  <th>Notification</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in bookings %}
+                  <tr>
+                    <td>{{ (row.submitted_at_utc|string)[:16]|replace('T', ' ') }}</td>
+                    <td>
+                      <strong>{{ row.primary_name }}</strong>
+                      {% if row.second_name %}<br />{{ row.second_name }}{% endif %}
+                    </td>
+                    <td>
+                      {% if row.contact_email %}{{ row.contact_email }}<br />{% endif %}
+                      {{ row.contact_mobile }}
+                      <br /><span class="helper">via {{ row.notification_method }}</span>
+                    </td>
+                    <td>{{ row.days }} day(s)<br /><span class="helper">{{ row.group_type }}</span></td>
+                    <td>
+                      {{ row.people }} guest(s)<br />
+                      <span class="helper">A {{ row.adults }} / C {{ row.children }} / I {{ row.infants }}</span>
+                    </td>
+                    <td>
+                      {% if row.resident_status == 'outside_india' %}
+                        International<br />
+                        <span class="helper">Passport: {{ row.primary_passport }}{% if row.second_passport %}, {{ row.second_passport }}{% endif %}</span>
+                      {% else %}
+                        India<br />
+                        <span class="helper">Aadhaar: {{ row.primary_aadhaar }}{% if row.second_aadhaar %}, {{ row.second_aadhaar }}{% endif %}</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if row.visa_details %}<span class="helper">Visa: {{ row.visa_details }}</span><br />{% endif %}
+                      {% if row.return_travel_details %}<span class="helper">Return: {{ row.return_travel_details }}</span>{% endif %}
+                    </td>
+                    <td><span class="status-pill status-{{ row.notification_status }}">{{ row.notification_status or 'n/a' }}</span></td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="helper">No stay bookings recorded yet.</p>
+        {% endif %}
+      </section>
+      {% endif %}
+
+      {% if active_tab == 'orders' %}
+      <section class="panel admin-card">
+        <div class="admin-tab-head">
+          <div>
+            <p class="eyebrow">Shop Orders</p>
+            <h2>Shopping orders ({{ shop_orders|length }})</h2>
+          </div>
+          <a class="ghost-link" href="{{ url_for('admin_export', name='orders') }}">Download Excel</a>
+        </div>
+        {% if shop_orders %}
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Submitted (UTC)</th>
+                  <th>Customer</th>
+                  <th>Contact</th>
+                  <th>Items</th>
+                  <th>Fulfillment</th>
+                  <th>Subtotal</th>
+                  <th>Delivery</th>
+                  <th>Total</th>
+                  <th>Expected delivery</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in shop_orders %}
+                  <tr>
+                    <td>{{ (row.submitted_at_utc|string)[:16]|replace('T', ' ') }}</td>
+                    <td><strong>{{ row.customer_name }}</strong></td>
+                    <td>{{ row.customer_email }}{% if row.customer_mobile %}<br />{{ row.customer_mobile }}{% endif %}</td>
+                    <td>{% for item in (row["items"]|string).split("; ") %}{{ item }}<br />{% endfor %}</td>
+                    <td>
+                      {{ row.fulfillment_type|capitalize }}
+                      {% if row.fulfillment_type == 'delivery' %}<br /><span class="helper">{{ row.distance_km }} km</span>{% endif %}
+                    </td>
+                    <td>INR {{ row.subtotal }}</td>
+                    <td>INR {{ row.delivery_charge }}</td>
+                    <td><strong>INR {{ row.total }}</strong></td>
+                    <td>{{ row.delivery_eta_text }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="helper">No shop orders recorded yet.</p>
+        {% endif %}
+      </section>
+      {% endif %}
+
+      {% if active_tab == 'photos' %}
       <section class="admin-grid">
         <article class="panel admin-card">
           <p class="eyebrow">Room Photo Upload</p>
@@ -74,7 +206,11 @@
             {% endfor %}
           </div>
         </article>
+      </section>
+      {% endif %}
 
+      {% if active_tab == 'products' %}
+      <section class="admin-grid">
         <article class="panel admin-card">
           <p class="eyebrow">Product Management</p>
           <h2>Add a new shop product</h2>
@@ -146,6 +282,7 @@
           {% endfor %}
         </div>
       </section>
+      {% endif %}
     </main>
   </body>
 </html>

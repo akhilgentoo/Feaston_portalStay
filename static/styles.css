@@ -671,6 +671,100 @@ button:disabled {
   gap: 0.5rem;
 }
 
+.admin-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.6rem;
+}
+
+.admin-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(11, 31, 68, 0.72);
+  color: var(--tea-300);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.admin-tab:hover {
+  color: var(--sand-100);
+}
+
+.admin-tab.is-active {
+  background: var(--gold-400);
+  border-color: var(--gold-300);
+  color: var(--pine-950);
+}
+
+.tab-count {
+  min-width: 1.5rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(7, 20, 45, 0.6);
+  color: var(--sand-100);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.admin-tab-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.admin-table-wrap {
+  margin-top: 0.8rem;
+  overflow-x: auto;
+  border: 1px solid rgba(240, 199, 94, 0.22);
+  border-radius: 12px;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid rgba(240, 199, 94, 0.14);
+}
+
+.admin-table th {
+  background: rgba(7, 20, 45, 0.8);
+  color: var(--gold-300);
+  white-space: nowrap;
+}
+
+.admin-table tbody tr:hover {
+  background: rgba(17, 45, 95, 0.5);
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--warn-bg);
+}
+
+.status-sent {
+  background: var(--ok-bg);
+}
+
 .docs-grid {
   align-items: start;
 }
