@@ -21,7 +21,7 @@ def test_cart_subtotal_from_catalog():
 
 
 def test_save_and_load_custom_products(tmp_path):
-    store_path = tmp_path / "products.json"
+    store_path = tmp_path / "products.xlsx"
     products = [
         Product(
             id="craft-test",
@@ -30,11 +30,11 @@ def test_save_and_load_custom_products(tmp_path):
             unit_price=999,
             unit_label="1 piece",
             description="Sample",
-            image_path="uploads/products/test.png",
+            image_path="products/test.png",
         )
     ]
     save_products(store_path, products)
     loaded = load_products(store_path)
     assert len(loaded) == 1
-    assert loaded[0].image_path == "uploads/products/test.png"
+    assert loaded[0].image_path == "products/test.png"
     assert find_product("craft-test", loaded) is not None

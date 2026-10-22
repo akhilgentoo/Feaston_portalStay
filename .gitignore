@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.venv/
+.vercel/
+documents/bookings.xlsx
+documents/shop_orders.xlsx
+~$*.xlsx

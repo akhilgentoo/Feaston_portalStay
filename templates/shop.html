@@ -44,7 +44,7 @@
             <article class="panel product-card">
               <div class="product-media">
                 {% if product.image_path %}
-                  <img src="{{ url_for('static', filename=product.image_path) }}" alt="{{ product.name }}" loading="lazy" />
+                  <img src="{{ url_for('media', filename=product.image_path) }}" alt="{{ product.name }}" loading="lazy" />
                 {% else %}
                   <div class="product-fallback">FeastOn</div>
                 {% endif %}

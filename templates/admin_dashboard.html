@@ -26,6 +26,12 @@
         </div>
       </header>
 
+      {% if read_only %}
+        <div class="feedback error">
+          <p>{{ read_only_message }}</p>
+        </div>
+      {% endif %}
+
       {% if notice %}
         <div class="feedback success">
           <p>{{ notice }}</p>
@@ -60,7 +66,7 @@
           <div class="admin-thumb-grid">
             {% for photo in room_photos %}
               <figure class="admin-thumb">
-                <img src="{{ url_for('static', filename=photo.image_path) }}" alt="{{ photo.caption }}" />
+                <img src="{{ url_for('media', filename=photo.image_path) }}" alt="{{ photo.caption }}" />
                 <figcaption>{{ photo.caption }}</figcaption>
               </figure>
             {% else %}
@@ -119,7 +125,7 @@
               </div>
               <div class="admin-product-photo">
                 {% if product.image_path %}
-                  <img src="{{ url_for('static', filename=product.image_path) }}" alt="{{ product.name }}" />
+                  <img src="{{ url_for('media', filename=product.image_path) }}" alt="{{ product.name }}" />
                 {% else %}
                   <div class="product-fallback small">No Image</div>
                 {% endif %}

@@ -11,22 +11,39 @@ from urllib import request as urlrequest
 from urllib.error import URLError
 from uuid import uuid4
 
-from flask import Flask, redirect, render_template, request, session, url_for
+from flask import Flask, redirect, render_template, request, send_from_directory, session, url_for
 from werkzeug.utils import secure_filename
 
 from feaston.booking import BookingRequest, BookingDecision, evaluate_booking
+from feaston.excel_store import append_row, read_rows, write_rows
 from feaston.shop import Product, build_cart_items, delivery_charge, find_product, load_products, save_products, subtotal_from_cart_items
 
 BASE_DIR = Path(__file__).resolve().parent
-SUBMISSION_LOG = BASE_DIR / "submissions.jsonl"
-SHOP_ORDER_LOG = BASE_DIR / "shop_orders.jsonl"
-DATA_DIR = BASE_DIR / "data"
-PRODUCT_STORE = DATA_DIR / "products.json"
-ROOM_PHOTO_STORE = DATA_DIR / "room_photos.json"
-UPLOAD_DIR = BASE_DIR / "static" / "uploads"
-ROOM_UPLOAD_DIR = UPLOAD_DIR / "rooms"
-PRODUCT_UPLOAD_DIR = UPLOAD_DIR / "products"
+DOCUMENTS_DIR = Path(os.getenv("FEASTON_DOCUMENTS_DIR") or (BASE_DIR / "documents"))
+PRODUCT_STORE = DOCUMENTS_DIR / "products.xlsx"
+ROOM_PHOTO_STORE = DOCUMENTS_DIR / "room_photos.xlsx"
+BOOKING_STORE = DOCUMENTS_DIR / "bookings.xlsx"
+SHOP_ORDER_STORE = DOCUMENTS_DIR / "shop_orders.xlsx"
+IMAGE_DIR = DOCUMENTS_DIR / "images"
+ROOM_UPLOAD_DIR = IMAGE_DIR / "rooms"
+PRODUCT_UPLOAD_DIR = IMAGE_DIR / "products"
 ALLOWED_IMAGE_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
+READ_ONLY = os.getenv("FEASTON_READ_ONLY", "1" if os.getenv("VERCEL") else "0") == "1"
+READ_ONLY_MESSAGE = (
+    "This live site is read-only. Add photos/products by updating the Excel files and images "
+    "in the documents/ folder locally, then commit and redeploy."
+)
+ROOM_PHOTO_COLUMNS = ["id", "caption", "image_path", "uploaded_at_utc"]
+BOOKING_COLUMNS = [
+    "submitted_at_utc", "days", "people", "group_type", "adults", "children", "infants",
+    "resident_status", "primary_name", "second_name", "notification_method", "contact_email",
+    "contact_mobile", "primary_aadhaar", "second_aadhaar", "primary_passport", "second_passport",
+    "visa_details", "return_travel_details", "notification_status", "notification_detail",
+]
+SHOP_ORDER_COLUMNS = [
+    "submitted_at_utc", "customer_name", "customer_email", "customer_mobile", "fulfillment_type",
+    "distance_km", "items", "subtotal", "delivery_charge", "total", "delivery_eta_text", "notifications",
+]
 
 
 def _parse_int(value: str | None, default: int = 0) -> int:
@@ -48,26 +65,14 @@ def _clean(value: str | None) -> str:
 
 
 def _ensure_runtime_dirs() -> None:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    if READ_ONLY:
+        return
     ROOM_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     PRODUCT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
-
-def _read_json_list(path: Path) -> list[dict]:
-    if not path.exists():
-        return []
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return []
-    if not isinstance(payload, list):
-        return []
-    return [row for row in payload if isinstance(row, dict)]
-
-
-def _write_json_list(path: Path, rows: list[dict]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(rows, ensure_ascii=True, indent=2), encoding="utf-8")
+    if not PRODUCT_STORE.exists():
+        save_products(PRODUCT_STORE, load_products(PRODUCT_STORE))
+    if not ROOM_PHOTO_STORE.exists():
+        write_rows(ROOM_PHOTO_STORE, ROOM_PHOTO_COLUMNS, [], "RoomPhotos")
 
 
 def _load_products() -> list[Product]:
@@ -79,11 +84,11 @@ def _save_products(products: list[Product]) -> None:
 
 
 def _load_room_photos() -> list[dict]:
-    return _read_json_list(ROOM_PHOTO_STORE)
+    return [row for row in read_rows(ROOM_PHOTO_STORE) if row.get("image_path")]
 
 
 def _save_room_photos(photos: list[dict]) -> None:
-    _write_json_list(ROOM_PHOTO_STORE, photos)
+    write_rows(ROOM_PHOTO_STORE, ROOM_PHOTO_COLUMNS, photos, "RoomPhotos")
 
 
 def _is_allowed_image(filename: str) -> bool:
@@ -103,7 +108,7 @@ def _save_uploaded_image(uploaded_file, destination_dir: Path, prefix: str) -> s
     filename = f"{prefix}-{uuid4().hex[:10]}{extension}"
     output_path = destination_dir / filename
     uploaded_file.save(output_path)
-    return str(Path("uploads") / destination_dir.name / filename)
+    return f"{destination_dir.name}/{filename}"
 
 
 def _slugify(text: str) -> str:
@@ -112,13 +117,24 @@ def _slugify(text: str) -> str:
 
 
 def _save_submission(payload: dict) -> None:
-    with SUBMISSION_LOG.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(payload, ensure_ascii=True) + "\n")
+    if READ_ONLY:
+        return
+    notification = payload.get("notification", {})
+    row = {
+        "submitted_at_utc": payload["submitted_at_utc"],
+        **payload["booking"],
+        **payload["documents"],
+        "notification_status": notification.get("status", ""),
+        "notification_detail": notification.get("detail", ""),
+    }
+    append_row(BOOKING_STORE, BOOKING_COLUMNS, row, "Bookings")
 
 
 def _save_shop_order(payload: dict) -> None:
-    with SHOP_ORDER_LOG.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(payload, ensure_ascii=True) + "\n")
+    if READ_ONLY:
+        return
+    row = {**payload, "items": "; ".join(f"{i['name']} x{i['quantity']}" for i in payload["cart_items"])}
+    append_row(SHOP_ORDER_STORE, SHOP_ORDER_COLUMNS, row, "Orders")
 
 
 def _send_email_alert(subject: str, body: str, destination: str) -> dict:
@@ -348,6 +364,20 @@ def create_app() -> Flask:
     app = Flask(__name__)
     app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY", "dev-only-secret-change-me")
 
+    @app.context_processor
+    def inject_storage_mode():
+        return {"read_only": READ_ONLY, "read_only_message": READ_ONLY_MESSAGE}
+
+    @app.route("/media/<path:filename>")
+    def media(filename: str):
+        return send_from_directory(IMAGE_DIR, filename)
+
+    def _reject_if_read_only():
+        if READ_ONLY:
+            session["admin_errors"] = [READ_ONLY_MESSAGE]
+            return redirect(url_for("admin_dashboard"))
+        return None
+
     @app.route("/", methods=["GET", "POST"])
     def index():
         form_data = {
@@ -563,6 +593,8 @@ def create_app() -> Flask:
     def admin_add_room_photo():
         if not _is_admin_authenticated():
             return redirect(url_for("admin_login"))
+        if (blocked := _reject_if_read_only()) is not None:
+            return blocked
 
         caption = _clean(request.form.get("caption"))
         photo = request.files.get("photo")
@@ -590,6 +622,8 @@ def create_app() -> Flask:
     def admin_add_product():
         if not _is_admin_authenticated():
             return redirect(url_for("admin_login"))
+        if (blocked := _reject_if_read_only()) is not None:
+            return blocked
 
         name = _clean(request.form.get("name"))
         category = _clean(request.form.get("category")) or "Spices"
@@ -638,6 +672,8 @@ def create_app() -> Flask:
     def admin_update_product_photo(product_id: str):
         if not _is_admin_authenticated():
             return redirect(url_for("admin_login"))
+        if (blocked := _reject_if_read_only()) is not None:
+            return blocked
 
         photo = request.files.get("photo")
         try:

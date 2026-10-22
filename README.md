@@ -28,6 +28,20 @@ python app.py
 
 Open: `http://127.0.0.1:5000`
 
+## Data storage (Excel, no database)
+
+All data lives in the `documents/` folder:
+
+- `documents/products.xlsx` - shop catalog (edit in Excel to add/change products)
+- `documents/room_photos.xlsx` - room gallery (`image_path` is relative to `documents/images/`)
+- `documents/images/rooms/`, `documents/images/products/` - image files
+- `documents/bookings.xlsx`, `documents/shop_orders.xlsx` - created locally on first booking/order (git-ignored, contain guest ID data)
+
+On Vercel (`VERCEL` env set) the app runs **read-only**: it reads the committed Excel files and images,
+but admin uploads are disabled and bookings/orders are not saved (email/SMS notifications still go out).
+To update the live site, run the app locally, use the admin dashboard (or edit the Excel files directly),
+then commit `documents/` and redeploy. Override with `FEASTON_READ_ONLY=0|1` or `FEASTON_DOCUMENTS_DIR`.
+
 ## Optional notification setup
 
 Email notifications require SMTP environment variables:

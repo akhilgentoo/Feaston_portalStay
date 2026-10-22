@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, fields
 from math import ceil
 from pathlib import Path
+
+from feaston.excel_store import read_rows, write_rows
 
 
 @dataclass(slots=True)
@@ -89,38 +90,23 @@ def product_from_dict(payload: dict) -> Product:
     )
 
 
+PRODUCT_COLUMNS = [f.name for f in fields(Product)]
+
+
 def save_products(store_path: Path, products: list[Product]) -> None:
-    store_path.parent.mkdir(parents=True, exist_ok=True)
-    serialized = [product_to_dict(product) for product in products]
-    store_path.write_text(json.dumps(serialized, ensure_ascii=True, indent=2), encoding="utf-8")
+    write_rows(store_path, PRODUCT_COLUMNS, [product_to_dict(product) for product in products], "Products")
 
 
 def load_products(store_path: Path) -> list[Product]:
-    if not store_path.exists():
-        defaults = list(DEFAULT_CATALOG)
-        save_products(store_path, defaults)
-        return defaults
-
-    try:
-        payload = json.loads(store_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        payload = []
-
     products: list[Product] = []
-    if isinstance(payload, list):
-        for row in payload:
-            if not isinstance(row, dict):
-                continue
+    for row in read_rows(store_path):
+        try:
             product = product_from_dict(row)
-            if product.id and product.name and product.unit_price > 0:
-                products.append(product)
-
-    if products:
-        return products
-
-    defaults = list(DEFAULT_CATALOG)
-    save_products(store_path, defaults)
-    return defaults
+        except (TypeError, ValueError):
+            continue
+        if product.id and product.name and product.unit_price > 0:
+            products.append(product)
+    return products or list(DEFAULT_CATALOG)
 
 
 def product_index(products: list[Product] | None = None) -> dict[str, Product]:

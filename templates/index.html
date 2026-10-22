@@ -132,7 +132,7 @@
           {% if room_photos %}
             {% for photo in room_photos %}
               <article class="gallery-card">
-                <img src="{{ url_for('static', filename=photo.image_path) }}" alt="{{ photo.caption }}" loading="lazy" />
+                <img src="{{ url_for('media', filename=photo.image_path) }}" alt="{{ photo.caption }}" loading="lazy" />
                 <p>{{ photo.caption }}</p>
               </article>
             {% endfor %}
